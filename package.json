@@ -1,0 +1,30 @@
+{
+  "name": "object-graph",
+  "version": "0.0.1",
+  "description": "An extensible javascript object graph.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://collinbrewer@bitbucket.org/collinbrewer/object-graph.git"
+  },
+  "author": "Collin Brewer <collin@brewer-collective.com>",
+  "license": "MIT",
+  "dependencies": {
+    "clone": "^1.0.2",
+    "descriptor": "git+https://collinbrewer@bitbucket.org/collinbrewer/descriptor.git",
+    "expression": "git+https://collinbrewer@bitbucket.org/collinbrewer/expression.git",
+    "json-patch": "git+https://collinbrewer@bitbucket.org/collinbrewer/json-patch.git",
+    "predicate": "git+https://collinbrewer@bitbucket.org/collinbrewer/predicate.git",
+    "promiz": "^1.0.3",
+    "schema": "git+https://collinbrewer@bitbucket.org/collinbrewer/schema.git",
+    "synth": "git+https://collinbrewer@bitbucket.org/collinbrewer/synth.git"
+  },
+  "devDependencies": {
+    "chai": "^3.0.0",
+    "chai-as-promised": "^5.1.0",
+    "mocha": "^2.2.5"
+  }
+}
