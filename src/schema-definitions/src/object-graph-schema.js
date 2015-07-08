@@ -10,17 +10,24 @@ var EntitySchema=require("../src/entity-schema.js");
    var index=function(o, entityDefinitions){
 
       var entitiesByName={};
+      var entities=[];
 
       var index={
-         "entitiesByName": entitiesByName
+         "entitiesByName": entitiesByName,
+         "entities" : entities
       };
+
+      var entity;
 
       for(var i=0, l=entityDefinitions.length; i<l; i++)
       {
          entityDefinition=entityDefinitions[i];
+         entity=new EntitySchema(entityDefinition);
 
          // index by type and name
-         entitiesByName[entityDefinition.name]=entityDefinition;
+         entitiesByName[entityDefinition.name]=entity;
+
+         entities.push(entity);
       }
 
       o.index=index;
@@ -33,23 +40,19 @@ var EntitySchema=require("../src/entity-schema.js");
    {
       this.definition=definition;
 
-      // index(this, definition.entities);
+      index(this, definition.entities);
    }
 
-   ObjectGraphSchema.prototype.getEntities = function () {
+   ObjectGraphSchema.prototype.getName = function () {
+      return this.definition.name;
+   };
 
-      if(!this.entities)
-      {
-         var entities=(this.entities=[]);
-         var es=this.definition.entities;
+   ObjectGraphSchema.prototype.getEntities = function (){
+      return this.index.entities;
+   };
 
-         for(var i=0, l=es.length, e; i<l, (e=es[i++]); i++)
-         {
-            entities.push(new EntitySchema(e));
-         }
-      }
-
-      return this.entities;
+   ObjectGraphSchema.prototype.getEntitiesByName = function () {
+      return this.index.entitiesByName;
    };
 
    // ObjectGraphSchema.prototype.getRelationshipsWithDestinationEntity=function(entity){

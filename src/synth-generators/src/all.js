@@ -389,12 +389,16 @@ Synth.register("class", function(entitySchema, context){
 Synth.register("object-graph", function(graphSchema, context){
 
    var classContext=context || {};
+   var classes={};
 
    // synthesize each entity c
    for(var i=0, entities=graphSchema.entities, l=entities.length, entity; i<l, (entity=entities[i++]);)
    {
       Synth.generate("class", entity, classContext, entity.name);
+      classes[entity.name]=classContext[entity.name];
    }
+
+   classContext
 
    return classContext;
 });

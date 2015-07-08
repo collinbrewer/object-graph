@@ -94,6 +94,11 @@ describe("Querying", function(){
       properties.should.have.property("employerName");
    });
 
+   it("should return a property by name", function(){
+
+      schema.getPropertyWithName("firstName").should.have.property("getName");
+   });
+
    // it("should return affected properties", function(){
    //
    //    var properties=schema.getPropertiesAffecting("fullName")

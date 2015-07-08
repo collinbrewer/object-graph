@@ -56,7 +56,7 @@
          // process the expression
          if(("valueExpression" in propertyDefinition))
          {
-            var dependentKey=getFirstDependentKeyFromKeyPath(propertyDefinition);
+            var dependentKey=getFirstDependentKeyFromKeyPath(propertyDefinition.valueExpression);
 
             affectedBy[dependentKey];
          }
@@ -96,6 +96,55 @@
    PropertySchema.prototype.getType = function () {
       console.log("definition: ", this.definition);
       return this.definition.type;
+   };
+
+   /**
+    * getSetterName
+    *
+    * Returns the name of the setter method for the property
+    */
+   PropertySchema.prototype.getSetterName = function () {
+
+      var setterName;
+      var definition=this.definition;
+
+      if(!definition.permission || (definition.permission && definition.permission==="readwrite"))
+      {
+         setterName=definition.setter;
+
+         if(!setterName)
+         {
+            var name=definition.name;
+            var Name=(name.substr(0, 1).toUpperCase() + name.substr(1));
+
+            setterName=("set" + Name);
+         }
+      }
+
+      return setterName;
+   };
+
+   /**
+    * getGetterName
+    *
+    * Returns the name of the getter method for the property
+    */
+   PropertySchema.prototype.getGetterName = function () {
+
+      var getterName;
+      var definition=this.definition;
+
+      getterName=definition.getter;
+
+      if(!getterName)
+      {
+         var name=definition.name;
+         var Name=(name.substr(0, 1).toUpperCase() + name.substr(1));
+
+         getterName=("get" + Name);
+      }
+
+      return getterName;
    };
 
    /**

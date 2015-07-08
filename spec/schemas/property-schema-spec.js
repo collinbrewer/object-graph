@@ -32,5 +32,13 @@ describe("Querying", function(){
    it("should return the property type", function(){
       schema.should.have.property("getType");
       schema.getType().should.equal("string");
-   })
+   });
+
+   it("should return the setter name", function(){
+      schema.getSetterName().should.equal("setTitle");
+   });
+
+   it("should return the getter name", function(){
+      schema.getGetterName().should.equal("getTitle");
+   });
 });

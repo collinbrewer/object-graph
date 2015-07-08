@@ -3,6 +3,8 @@
  * A library for describing, manipulating and querying entity schemas
  */
 
+var PropertySchema=require("../src/property-schema.js");
+
 (function(){
 
    var _indexRelations=function(){
@@ -127,22 +129,26 @@
       var included={};
       var required={};
       var transient={};
+      var all={};
 
       var index={
          "attribute" : attributes,
          "relationship" : relationships,
          "fetched" : fetched,
          "required" : required,
-         "transient" : transient
+         "transient" : transient,
+         "all" : all
       };
 
       var propertyDefinition;
+      var property;
       var type;
       var name;
 
       for(var i=0, l=propertyDefinitions.length; i<l; i++)
       {
          propertyDefinition=propertyDefinitions[i];
+         property=new PropertySchema(propertyDefinition);
          type=propertyDefinition.type;
          name=propertyDefinition.name;
 
@@ -152,19 +158,22 @@
             type="attribute";
          }
 
-         index[type][name]=propertyDefinition;
+         index[type][name]=property;
 
          // required
          if(("required" in propertyDefinition) && propertyDefinition.required===true)
          {
-            required[name]=propertyDefinition;
+            required[name]=property;
          }
 
          // transient
          if(type==="fetched" || type==="transient")
          {
-            transient[name]=propertyDefinition;
+            transient[name]=property;
          }
+
+         // all
+         all[name]=property;
       }
 
       // console.log("index: ", index);
@@ -175,7 +184,7 @@
    /**
     * EntitySchema
     */
-   function EntitySchema(definition, schema)
+   function EntitySchema(definition)
    {
       this.definition=definition;
 
@@ -201,6 +210,14 @@
 
    EntitySchema.prototype.getTransientByName=function(){
       return this.index.transient;
+   };
+
+   EntitySchema.prototype.getPropertiesByName=function (){
+      return this.index.all;
+   };
+
+   EntitySchema.prototype.getPropertyWithName=function (name){
+      return this.index.all[name];
    };
 
    // If a property's value is dependent on other information, like a fetched property, need to be able to invalidate a property

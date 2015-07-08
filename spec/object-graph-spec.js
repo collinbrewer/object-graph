@@ -9,6 +9,62 @@ var ObjectGraph=require("../index.js");
 
 chai.use(chaiAsPromised);
 
+var definition={
+   "schemaType":"object-graph",
+   "entities": [
+      {
+         schemaType : "entity",
+         name: "Company",
+         properties: [
+            {
+               schemaType : "property",
+               name: "name",
+               type: "string"
+            }
+         ]
+      },
+
+      {
+         "schemaType" : "entity",
+         name: "Person",
+         properties: [
+            {
+               schemaType : "property",
+               name: "firstName",
+               type: "string"
+            },
+
+            {
+               schemaType : "property",
+               name: "lastName",
+               type: "string"
+            },
+
+            {
+               schemaType : "property",
+               name: "employer",
+               type: "relationship",
+               entityName: "Company"
+            },
+
+            // {
+            //    schemaType : "property",
+            //    name: "fullName",
+            //    type: "fetched",
+            //    valueExpression: "firstName lastName"
+            // },
+
+            {
+               schemaType : "property",
+               name : "employerName",
+               type : "fetched",
+               valueExpression : "employer.name"
+            }
+         ]
+      }
+   ]
+};
+
 describe("Constructor", function(){
 
    it("should create a new object graph", function(){
@@ -16,66 +72,6 @@ describe("Constructor", function(){
       var objectGraph=new ObjectGraph();
 
       should.exist(objectGraph);
-   });
-});
-
-describe("Patching", function(){
-
-   context("#applyPatch", function(){
-
-      var objectGraph;
-      var patch=[{"op":"add", "path":"/foo", "value":"bar"}];
-
-      beforeEach(function(){
-         objectGraph=new ObjectGraph();
-      });
-
-      it("should apply a patch", function(done){
-
-         objectGraph.applyPatch(patch)
-            .then(function(){
-
-               // objectGraph.patch.should.not.be.empty();
-               // expect(objectGraph.document).not.be.empty();
-               // objectGraph.document.should.not.be.empty();
-               if(JSON.stringify(objectGraph.document)==="{}")
-               {
-                  throw new Error("objectGraph.document is not empty");
-               }
-
-               done();
-            });
-      });
-
-      it("should return a patch", function(done){
-
-         objectGraph.applyPatch(patch)
-            .then(function(){
-               return objectGraph.requestPatch();
-            })
-            .then(function(applied){
-
-               // applied.should.have.length(1);
-               // if(applied.length!==1)
-               // {
-               //    throw new Error("applied.length is not equal to 1");
-               // }
-               //
-               // // applied[0].should.have.property("op");
-               // if(!applied[0].hasOwnProperty("op"))
-               // {
-               //    throw new Error("applied[0] does not have property 'op'");
-               // }
-               //
-               // // applied[0].op.should.equal("add");
-               // if(applied[0].op!=="add")
-               // {
-               //    throw new Error("applied[0].op does not have value 'add'");
-               // }
-
-               done();
-            });
-      });
    });
 });
 
@@ -212,62 +208,6 @@ describe("Relationships", function(){
 
 describe("Fetched Properties", function(){
 
-   var definition={
-      "schemaType":"object-graph",
-      "entities": [
-         {
-            schemaType : "entity",
-            name: "Company",
-            properties: [
-               {
-                  schemaType : "property",
-                  name: "name",
-                  type: "string"
-               }
-            ]
-         },
-
-         {
-            "schemaType" : "entity",
-            name: "Person",
-            properties: [
-               {
-                  schemaType : "property",
-                  name: "firstName",
-                  type: "string"
-               },
-
-               {
-                  schemaType : "property",
-                  name: "lastName",
-                  type: "string"
-               },
-
-               {
-                  schemaType : "property",
-                  name: "employer",
-                  type: "relationship",
-                  entityName: "Company"
-               },
-
-               // {
-               //    schemaType : "property",
-               //    name: "fullName",
-               //    type: "fetched",
-               //    valueExpression: "firstName lastName"
-               // },
-
-               {
-                  schemaType : "property",
-                  name : "employerName",
-                  type : "fetched",
-                  valueExpression : "employer.name"
-               }
-            ]
-         }
-      ]
-   };
-
    it("should resolve an internal fetched property");
 
    it("should return an external fetched property", function(done){
@@ -299,19 +239,106 @@ describe("Fetched Properties", function(){
 
 });
 
-//
-// describe("Invalidations", function(){
-//
-//    var objectGraph;
-//    var patch=[
-//       {"op":"add", "path":"/Todo", "value":{"id":1234, "title":"one"}},
-//       {"op":"add", "path":"/Todo", "value":{"id":4321, "title":"two"}}
-//    ];
-//
-//    beforeEach(function(){
-//       objectGraph=new ObjectGraph();
-//    });
-//
-//
-//
-// });
+
+describe("Invalidations", function(){
+
+   // synthesize an object graph from the schema
+   var Spec={};
+
+   Synth.generate("object-graph", definition, Spec);
+
+   var objectGraph=new ObjectGraph();
+
+   it("should invalidate an internal fetched property");
+
+   it("should invalidate an external fetched property");
+
+   it("should invalidate a cached relationship property");
+});
+
+describe("Patching", function(){
+
+   context("#requestPatch", function(){
+
+      var Spec={};
+
+      Synth.generate("object-graph", definition, Spec);
+
+      var objectGraph;
+      var person;
+
+      beforeEach(function(){
+
+         objectGraph=new ObjectGraph();
+      });
+
+      it("should generate and return a patch", function(){
+
+         new Spec.Person(objectGraph);
+
+         return objectGraph.requestPatch().should.eventually.be.an("array");
+      });
+   });
+});
+
+describe("Staging", function(){
+
+   var Spec={};
+
+   Synth.generate("object-graph", definition, Spec);
+
+   var objectGraph;
+   var person;
+
+   beforeEach(function(){
+
+      objectGraph=new ObjectGraph();
+
+      person=new Spec.Person(objectGraph);
+      person.setFirstName("Chris");
+   });
+
+   it("should have staged changes", function(done){
+
+      objectGraph.requestPatch()
+         .then(function(patch){
+            patch.should.have.length(1);
+            patch[0].should.have.property("op");
+            patch[0].op.should.equal("add");
+
+            done();
+         });
+   });
+
+   it("should rollback staged changes", function(){
+
+      objectGraph.rollback();
+
+      objectGraph.requestPatch().should.eventually.have.length(0);
+      objectGraph.read({entityName:"Person"}).should.have.length(0);
+   });
+
+   it("should commit staged changes", function(done){
+
+      objectGraph.setParent({
+         applyPatch: function(){
+            done();
+
+            return Promise.resolve();
+         }
+      })
+
+      objectGraph.commit();
+   });
+
+   it("should clear staged changes");
+});
+
+describe("Branching", function(){
+
+   var objectGraph=new ObjectGraph();
+   var branch;
+
+   it("should create a branch");
+   it("should merge the branch");
+});
