@@ -12,11 +12,9 @@ function appendCreateToPatch()
 {
    // console.log("appending create to patch: ", arguments);
 
-   var schemaName=this.getSchema().name;
+   var schemaName=this.getSchema().getName();
    var ID=this.ID;
 
-   // calling applyPatch with a version number on object graph prevents
-   // new objects from being created
    this.objectGraph.applyPatch([{
       op: "add",
       path: "/" + schemaName + "/0",
@@ -26,12 +24,17 @@ function appendCreateToPatch()
    this.objectGraph.register(this);
 };
 
-function appendUpdateToPatch()
+function appendUpdateToPatch(key, value)
 {
+   var schema=this.getSchema();
+   var propertySchema=schema.getPropertyWithName(key);
+   var getter=this[propertySchema.getGetterName()];
+
    this.objectGraph.applyPatch([{
       op: "replace",
-      path: "/" + this.schema.name + "/" + this.uuid + "/" + schema.name,
-      value: this[schema.name]
+      path: "/" + schema.getName() + "/" + this.ID + "/" + key,
+      previousValue:getter.call(this),
+      value: value
    }], {patchOnly:true});
 };
 
@@ -39,13 +42,13 @@ function appendDeleteToPatch(schema)
 {
    this.objectGraph.applyPatch([{
       op: "delete",
-      path: "/" + this.schema.name + "/" + this.uuid
+      path: "/" + this.getSchema().getName() + "/" + this.ID
    }], {patchOnly:true});
 }
 
-Synth.extend("class", function(_class){
+Synth.extend("entity", function(_class){
 
    _class.prototype.afterCreate=appendCreateToPatch;
-   _class.prototype.afterUpdate=appendUpdateToPatch;
+   _class.prototype.beforeUpdate=appendUpdateToPatch;
    _class.prototype.afterDelete=appendDeleteToPatch;
 });

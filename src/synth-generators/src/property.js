@@ -19,23 +19,23 @@ var Typecasters={
    "date"    : function(value){ return Date.parse(value); }
 };
 
-Synth.register("unnamed-getter", function(config){
+Synth.register("unnamed-getter", function(propertySchema){
    return get;
 });
 
-Synth.register("unnamed-setter", function(config){
+Synth.register("unnamed-setter", function(propertySchema){
    return set;
 });
 
-Synth.register("attribute-getter", function(config){
+Synth.register("attribute-getter", function(propertySchema){
 
-   var name=config.name;
-   var ivar=(("ivar" in config) ? config.ivar : name);
+   var ivar=propertySchema.getIvar();
+
    var source="";
-   source+="return this." + ivar + ";\n";
+   source+="return this." + ivar + ";";
 
    var getter=new Function(source);
-
+   
    return getter;
 });
 
@@ -46,25 +46,29 @@ Synth.register("attribute-getter", function(config){
 //    + setter: specifies the name of the mutator to use to mutate the ivar, if already defined, one will not be synthesized
 //    - type: the type of data to be stored in the ivar, used in the CAST method to ensure that a properties value is the correct type
 //    - defaultValue
-Synth.register("getter", function(config){
+Synth.register("getter", function(propertySchema){
 
-   var type=config.type;
-   (type!=="relationship") && (type="attribute");
-
-   return Synth.generate(type + "-getter", config);
+   return Synth.generate(propertySchema.getType() + "-getter", propertySchema);
 });
 
-Synth.register("attribute-setter", function(config){
+Synth.register("fetched-getter", function(propertySchema){
+   return Synth.generate("attribute-getter", propertySchema);
+});
 
-   var name=config.name;
-   var ivar=(("ivar" in config) ? config.ivar : name);
+Synth.register("attribute-setter", function(propertySchema){
+
+   var ivar=propertySchema.getIvar();
+   var name=propertySchema.getName();
 
    // it seems like overkill to eval source, but direct access and lookups
    // via: this.varname is much faster than the dynamic: this["varname"]
    var source="";
    // source+="if(Synth.isValidType(value, " + type + "))\n";
    // source+="{\n"
-   source+="   this." + ivar + "=value;";
+   source+="   this.beforeUpdate && this.beforeUpdate('" + name + "', value);\n";
+   source+="   this." + ivar + "=value;\n";
+   source+="   this.afterUpdate && this.afterUpdate('" + name + "', value);\n";
+
    // source+="}\n";
 
    return new Function("value", source);
@@ -75,13 +79,13 @@ Synth.register("attribute-setter", function(config){
  */
 var getPrimitiveValueOfObject=function(object){ return object.ID; };
 
-Synth.register("relationship-getter", function(config){
+Synth.register("relationship-getter", function(propertySchema){
 
-   var name=config.name;
-   var ivar=(("ivar" in config) ? config.ivar : name);
+   var ivar=propertySchema.getIvar();
+
    var source="";
 
-   var isToMany=(("toMany" in config) && config.toMany===true);
+   var isToMany=propertySchema.isToMany();
 
    // resolve the objects out of *context*... this.context[entity][id]
    if(isToMany)
@@ -92,7 +96,7 @@ Synth.register("relationship-getter", function(config){
       source+="for(var i=0, id; i<l, (id=ids[i]); i++)\n";
       source+="{\n";
       source+="   console.log(this);\n";
-      source+="   resuts[i]=this.objectGraph." + config.entityName + "[id];\n";
+      source+="   resuts[i]=this.objectGraph." + propertySchema.getEntityName() + "[id];\n";
       source+="}";
    }
    else
@@ -100,11 +104,11 @@ Synth.register("relationship-getter", function(config){
       source+="var id=this." + ivar + ";\n";
       source+="var predicate=\"ID=='\" + id + \"'\";\n";
       source+="var results=this.objectGraph.read({\n";
-      source+="   entityName: '" + config.entityName + "',\n";
+      source+="   entityName: '" + propertySchema.getEntityName() + "',\n";
       source+="   predicate: predicate\n";
       // source+="   entityName:asdf,\n";
       source+="});\n";
-      // source+="return this.objectGraph." + config.entityName + "[id];";
+      // source+="return this.objectGraph." + propertySchema.get + "[id];";
 
       // console.log("source: ", source);
    }
@@ -218,10 +222,10 @@ Synth.register("fetcher", function(property, context){
    return fetch;
 });
 
-Synth.register("relationship-tomany-setter", function(config){
+Synth.register("relationship-tomany-setter", function(propertySchema){
 
-   var name=config.name;
-   var ivar=(("ivar" in config) ? config.ivar : name);
+   var ivar=propertySchema.getIvar();
+
    var source="";
    // source+="function(value){\n";
    source+="   var l=value.length;\n";
@@ -235,10 +239,10 @@ Synth.register("relationship-tomany-setter", function(config){
    return new Function("value", source);
 });
 
-Synth.register("relationship-toone-setter", function(config){
+Synth.register("relationship-toone-setter", function(propertySchema){
 
-   var name=config.name;
-   var ivar=(("ivar" in config) ? config.ivar : name);
+   var ivar=propertySchema.getIvar();
+
    var source="";
    // source+="function(value){\n";
    source+="   var primitive=value.ID;\n";
@@ -248,25 +252,22 @@ Synth.register("relationship-toone-setter", function(config){
    return new Function("value", source);
 });
 
-Synth.register("relationship-setter", function(config){
+Synth.register("relationship-setter", function(propertySchema){
 
-   return Synth.generate("relationship-" + (config.toMany ? "tomany" : "toone") + "-setter", config);
+   return Synth.generate("relationship-" + (propertySchema.isToMany() ? "tomany" : "toone") + "-setter", propertySchema);
 
 });
 
 
-Synth.register("setter", function(config){
+Synth.register("setter", function(propertySchema){
 
-   var type=config.type;
-   (type!=="fetched" && type!=="relationship") && (type="attribute");
-
-   return Synth.generate(type + "-setter", config);
+   return Synth.generate(propertySchema.getType() + "-setter", propertySchema);
 });
 
-Synth.register("checker", function(config){
+Synth.register("checker", function(propertySchema){
 
-   var name=config.name;
-   var ivar=(("ivar" in config) ? config.ivar : name);
+   var ivar=propertySchema.getIvar();
+
    var source="";
 
    source+="  return ('" + ivar + "' in this);";
@@ -275,130 +276,44 @@ Synth.register("checker", function(config){
 });
 
 
-Synth.register("property", function(config, context){
+Synth.register("property", function(propertySchema, context){
 
-   var name=config.name;
-   var Name=(name.substr(0, 1).toUpperCase() + name.substr(1));
-   var perm=config.permission ? config.permission : "readwrite";
+   var permission=propertySchema.getPermission();
 
    // generate a setter if the property isn't readonly
-   var setter=config.setter || ("set" + Name);
-
-   if(config.type!=="fetched" && (perm==="readwrite") && !(setter in context))
+   if(permission==="readwrite")
    {
-      Synth.generate("setter", config, context, setter);
-   }
+      var setter=propertySchema.getSetterName();
 
-   // generate a getter if it doesn't already exist
-   var getter=config.getter ? config.getter : ("get" + Name);
-
-   if(!(getter in context))
-   {
-      Synth.generate("getter", config, context, getter);
-   }
-
-   // generate a checker if it doesn't already exist
-   var checker=config.checker ? config.checker : ("has" + Name);
-
-   if(!(checker in context))
-   {
-      Synth.generate("checker", config, context, checker);
-   }
-
-   // generate a fetcher if appropriate
-   var fetcher=config.fetcher ? config.fetcher : ("fetch" + Name);
-
-   if(config.type==="fetched" && !(fetcher in context))
-   {
-      Synth.generate("fetcher", config, context, fetcher);
-   }
-
-   return context;
-});
-
-/**
- * Generates a class from the given entity schema
- */
-
-var isFirstRunClass=true;
-
-Synth.register("class", function(entitySchema, context){
-
-   if(isFirstRunClass)
-   {
-      global.uuid=function(){
-
-         var d = new Date().getTime();
-         var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = (d + Math.random()*16)%16 | 0;
-            d = Math.floor(d/16);
-            return (c=='x' ? r : (r&0x3|0x8)).toString(16);
-         });
-
-         return uuid;
-      };
-   }
-
-   var className=entitySchema.className || entitySchema.name;
-   var _class=("class" in entitySchema) ? entitySchema.class : null;
-
-   if(_class===null)
-   {
-      var source="";
-      source+="var NewClass=function " + className + "(objectGraph){\n";
-      // source+="   options || (options={});\n"
-      // source+="   this.options=options;\n";
-      source+="   this.beforeCreate && this.beforeCreate();\n";
-      source+="   this.ID=uuid();\n";
-      source+="   this.objectGraph=objectGraph;\n";
-      source+="   this.afterCreate && this.afterCreate();\n";
-      source+="}";
-
-      /* jslint evil:true */
-      (function(){
-         eval(source); // var NewClass=function ClassName(){}
-         _class=NewClass;
-      })();
-
-      _class.schema=entitySchema;
-   }
-
-   // synthesize properties
-   var propertyContext=_class.prototype;
-
-   propertyContext.schema=entitySchema;
-   propertyContext.getSchema=function(){ return this.constructor.schema; };
-
-   if(entitySchema.properties)
-   {
-      for(var j=0, ps=entitySchema.properties, c=ps.length, propertySchema; j<c, (propertySchema=ps[j++]);)
+      if(propertySchema.getType()!=="fetched" && !(setter in context))
       {
-         Synth.generate("property", propertySchema, propertyContext);
+         Synth.generate("setter", propertySchema, context, setter);
       }
    }
 
-   return _class;
-});
+   // generate a getter if it doesn't already exist
+   var getter=propertySchema.getGetterName();
 
-/**
- * Generates an object graph from the given schema
- *
- * @param {Object} schema A Schema or schema definition to synthesize
- * @param {Object} context The context in which to synthesize the object graph
- */
-Synth.register("object-graph", function(graphSchema, context){
-
-   var classContext=context || {};
-   var classes={};
-
-   // synthesize each entity c
-   for(var i=0, entities=graphSchema.entities, l=entities.length, entity; i<l, (entity=entities[i++]);)
+   if(!(getter in context))
    {
-      Synth.generate("class", entity, classContext, entity.name);
-      classes[entity.name]=classContext[entity.name];
+      Synth.generate("getter", propertySchema, context, getter);
    }
 
-   classContext
+   // generate a checker if it doesn't already exist
+   var checker=propertySchema.getCheckerName();
 
-   return classContext;
+   if(!(checker in context))
+   {
+      Synth.generate("checker", propertySchema, context, checker);
+   }
+
+   // generate a fetcher if appropriate
+   var fetcher=propertySchema.getFetcherName();
+
+   if(propertySchema.getType()==="fetched" && !(fetcher in context))
+   {
+      Synth.generate("fetcher", propertySchema, context, fetcher);
+   }
+
+   return context;
 });

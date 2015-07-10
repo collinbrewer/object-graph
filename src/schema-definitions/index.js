@@ -11,3 +11,6 @@ var ObjectGraphSchema=require("./src/object-graph-schema.js");
 Schema.register("property", PropertySchema);
 Schema.register("entity", EntitySchema);
 Schema.register("object-graph", ObjectGraphSchema);
+
+// export
+(typeof(module)!=="undefined" ? (module.exports=ObjectGraphSchema) : ((typeof(define)!=="undefined" && define.amd) ? define(function(){ return ObjectGraphSchema; }) : (window.ObjectGraphSchema=ObjectGraphSchema)));

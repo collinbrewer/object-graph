@@ -41,7 +41,7 @@ require("./descriptor-handlers/index.js");
       {
          if(setter)
          {
-            object.setter.call(object, value);
+            object[setter].call(object, value);
          }
       }
    }
@@ -155,7 +155,7 @@ require("./descriptor-handlers/index.js");
     */
    ObjectGraph.prototype.register = function (obj) {
 
-      var entityName=obj.getSchema().name;
+      var entityName=obj.getSchema().getName();
       ensure(this.store, entityName, "array").push(obj);
       ensure(ensure(this.indexed, entityName, "object"), "ID", "object")[obj.ID]=obj;
    };
@@ -167,7 +167,7 @@ require("./descriptor-handlers/index.js");
     */
    ObjectGraph.prototype.unregister = function (obj) {
 
-      var entityName=obj.getSchema().name;
+      var entityName=obj.getSchema().getName();
       var collection=this.store[entityName];
       var indexOf=collection.indexOf(obj); // TODO: this needs work because we should be looking by ID, not just object equality
 
@@ -225,11 +225,13 @@ require("./descriptor-handlers/index.js");
       else
       {
          var components; // /entityName/objectID/propertyName
+         var ID;
 
          for(var i=patch.length-1, operation; i>=0, (operation=patch[i--]);)
          {
             components=operation.path.substr(1).split("/");
-            object=this.read({entityName:components[0], predicate:"ID=='" + operation.value.ID + "'"});
+            ID=(components.length===3 ? components[1] : operation.value.ID);
+            object=this.read({entityName:components[0], predicate:"ID=='" + ID + "'"});
 
             if(object.length>0)
             {
@@ -241,7 +243,7 @@ require("./descriptor-handlers/index.js");
                }
                else if(operation.op==="replace") // undo changed property
                {
-                  setUsingSetter(object, components[2], operation.value);
+                  setUsingSetter(object, components[2], operation.previousValue);
                }
                else if(operation.op==="delete")
                {

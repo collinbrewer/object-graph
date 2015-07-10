@@ -1,6 +1,6 @@
 {
   "name": "object-graph",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An extensible javascript object graph.",
   "main": "index.js",
   "scripts": {

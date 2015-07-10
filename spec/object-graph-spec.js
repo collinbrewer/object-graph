@@ -302,7 +302,8 @@ describe("Staging", function(){
 
       objectGraph.requestPatch()
          .then(function(patch){
-            patch.should.have.length(1);
+
+            patch.should.have.length(2);
             patch[0].should.have.property("op");
             patch[0].op.should.equal("add");
 
@@ -316,6 +317,7 @@ describe("Staging", function(){
 
       objectGraph.requestPatch().should.eventually.have.length(0);
       objectGraph.read({entityName:"Person"}).should.have.length(0);
+      should.not.equal(person.getFirstName(), "Chris");
    });
 
    it("should commit staged changes", function(done){
@@ -330,8 +332,6 @@ describe("Staging", function(){
 
       objectGraph.commit();
    });
-
-   it("should clear staged changes");
 });
 
 describe("Branching", function(){

@@ -2,5 +2,6 @@
  * Extends Synth to handle ObjectGraph
  */
 
-require("./src/all.js");
+ // dependencies
+require("./src/object-graph.js");
 require("./src/patchable.js");

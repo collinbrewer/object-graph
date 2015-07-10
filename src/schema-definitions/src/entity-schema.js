@@ -123,6 +123,8 @@ var PropertySchema=require("../src/property-schema.js");
 
    var index=function(o, propertyDefinitions){
 
+      propertyDefinitions || (propertyDefinitions=[]);
+
       var attributes={};
       var relationships={};
       var fetched={};
@@ -130,6 +132,7 @@ var PropertySchema=require("../src/property-schema.js");
       var required={};
       var transient={};
       var all={};
+      var properties=[];
 
       var index={
          "attribute" : attributes,
@@ -140,34 +143,28 @@ var PropertySchema=require("../src/property-schema.js");
          "all" : all
       };
 
-      var propertyDefinition;
       var property;
       var type;
       var name;
 
       for(var i=0, l=propertyDefinitions.length; i<l; i++)
       {
-         propertyDefinition=propertyDefinitions[i];
-         property=new PropertySchema(propertyDefinition);
-         type=propertyDefinition.type;
-         name=propertyDefinition.name;
+         property=new PropertySchema(propertyDefinitions[i]);
+         properties.push(property);
+         type=property.getType();
+         name=property.getName();
 
          // index by type and name
-         if(!(type in index))
-         {
-            type="attribute";
-         }
-
          index[type][name]=property;
 
          // required
-         if(("required" in propertyDefinition) && propertyDefinition.required===true)
+         if(property.isRequired())
          {
             required[name]=property;
          }
 
          // transient
-         if(type==="fetched" || type==="transient")
+         if(property.isTransient())
          {
             transient[name]=property;
          }
@@ -179,6 +176,7 @@ var PropertySchema=require("../src/property-schema.js");
       // console.log("index: ", index);
 
       o.index=index;
+      o.properties=properties;
    };
 
    /**
@@ -192,32 +190,89 @@ var PropertySchema=require("../src/property-schema.js");
       index(this, this.definition.properties);
    }
 
+   /**
+    * Returns the definition used to create the schema.
+    */
+   EntitySchema.prototype.getDefinition = function () {
+      return this.definition;
+   };
+
+   /**
+    * Returns the name of the entity.
+    */
+   EntitySchema.prototype.getName = function () {
+      return this.definition.name;
+   };
+
+   /**
+    * Used to get the class name of the entity.
+    */
+   EntitySchema.prototype.getClassName = function () {
+      return this.definition.className || this.definition.name;
+   };
+
+   /**
+    * Used to get the class of the entity.
+    */
+   EntitySchema.prototype.getClass = function () {
+      return this.definition.class;
+   };
+
+   /**
+    * Used to get the entities attributes by name.
+    */
    EntitySchema.prototype.getAttributesByName=function(){
       return this.index.attribute;
    };
 
+   /**
+    * Used to get the entities relationships by name.
+    */
    EntitySchema.prototype.getRelationshipsByName=function(){
       return this.index.relationship;
    };
 
+   /**
+    * Used to get the entities fetched properties by name.
+    */
    EntitySchema.prototype.getFetchedByName=function(){
       return this.index.fetched;
    };
 
+   /**
+    * Used to get the entities required properties by name.
+    */
    EntitySchema.prototype.getRequiredByName=function(){
       return this.index.required;
    };
 
+   /**
+    * Used to get the entities transient properties by name.
+    */
    EntitySchema.prototype.getTransientByName=function(){
       return this.index.transient;
    };
 
+   /**
+    * Used to get the entities properties by name.
+    */
    EntitySchema.prototype.getPropertiesByName=function (){
       return this.index.all;
    };
 
+   /**
+    * Used to get a property of the entity by name.
+    */
    EntitySchema.prototype.getPropertyWithName=function (name){
       return this.index.all[name];
+   };
+
+   /**
+    * Used to get a list of the entities properties.
+    * @return {array} The properties of the entity
+    */
+   EntitySchema.prototype.getProperties = function () {
+      return this.properties;
    };
 
    // If a property's value is dependent on other information, like a fetched property, need to be able to invalidate a property

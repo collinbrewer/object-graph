@@ -31,6 +31,7 @@ describe("Querying", function(){
    var definition={
       "schemaType" : "entity",
       "name" : "Person",
+      "className" : "PersonObject",
       "properties" : [
          {
             "schemaType" : "property",
@@ -58,6 +59,14 @@ describe("Querying", function(){
    };
 
    var schema=new EntitySchema(definition);
+
+   it("should return the name of the entity", function(){
+      schema.getName().should.equal("Person");
+   });
+
+   it("should return the class name of the entity", function(){
+      schema.getClassName().should.equal("PersonObject");
+   });
 
    it("should return attribute properties", function(){
 
