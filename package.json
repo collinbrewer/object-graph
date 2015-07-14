@@ -18,7 +18,6 @@
     "expression": "git+https://collinbrewer@bitbucket.org/collinbrewer/expression.git",
     "json-patch": "git+https://collinbrewer@bitbucket.org/collinbrewer/json-patch.git",
     "predicate": "git+https://collinbrewer@bitbucket.org/collinbrewer/predicate.git",
-    "promiz": "^1.0.3",
     "schema": "git+https://collinbrewer@bitbucket.org/collinbrewer/schema.git",
     "synth": "git+https://collinbrewer@bitbucket.org/collinbrewer/synth.git"
   },

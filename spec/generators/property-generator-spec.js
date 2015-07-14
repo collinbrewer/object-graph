@@ -1,3 +1,5 @@
+var should=require("chai").should();
+
 describe("Attribute Setters", function(){
 
    var o={};

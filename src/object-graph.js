@@ -4,17 +4,33 @@ global.Schema=require("schema");
 global.Expression=require("expression");
 global.Predicate=require("predicate");
 global.Descriptor=require("descriptor");
-global.Synth=require("synth");
+// global.Synth=require("synth");
+var Synth=require("synth");
 
 require("../node_modules/descriptor/src/handlers/defaults.js");
-require("./schema-definitions/index.js");
-require("./synth-generators/index.js");
+// require("./synth-generators/index.js");
 require("./descriptor-handlers/index.js");
+
+// var ObjectGraphSynthGenerators=require("./synth-generators/index");
+
+// Synth.register("property", PropertyFactory);
+
+var EntityFactory=require("./synth-generators/src/entity-generator.js");
+
+var ObjectGraphSchema=require("./schema-definitions/index.js");
 
 (function(){
 
    var clone=require("clone");
 
+   /**
+    * Internal method for ensuring that a given value type exists for a key in
+    * the given document.
+    * @param  {array/object} doc The document to ensure the key in.
+    * @param  {string/integer} key The key to ensure, can be an array index or key
+    * @param  {string} type The type of value to ensure
+    * @return {array/object} The ensured value
+    */
    function ensure(doc, key, type)
    {
       if(!(key in doc))
@@ -80,24 +96,100 @@ require("./descriptor-handlers/index.js");
    /**
     * Internal method for applying a patch to an object graph.
     */
-   function applyVersionedPatch(patch){}
+   function applyVersionedPatch(objectGraph, patch, options)
+   {
+      var operation;
+      var op;
+      var path;
+      var components;
+      var entityName;
+      var ID;
+      var object;
+
+      for(var i=0, l=patch.length; i<l; i++)
+      {
+         operation=patch[i];
+         op=operation.op;
+         path=operation.path;
+         components=(path.charAt(0)==="/" ? path.substr(1) : path).split("/");
+         entityName=components[0];
+
+         if(op==="add")
+         {
+            var _class=objectGraph[entityName];
+            object=new _class(objectGraph, {ID:components[1]});
+         }
+         else if(op==="replace")
+         {
+            object=objectGraph.indexed[entityName].ID[components[1]];
+
+            if(object) // this may not be in loaded
+            {
+               setUsingSetter(object, components[2], operation.value);
+            }
+         }
+         else if(op==="delete")
+         {
+
+         }
+      }
+
+      return;
+   }
+
+   /**
+    * Set the schema for the object graph.  Will build the various classes
+    */
+   function buildObjectGraphFromSchema(objectGraph, schema) {
+
+      // synthesize each entity class
+      for(var i=0, entities=schema.getEntities(), l=entities.length, entitySchema; i<l, (entitySchema=entities[i++]);)
+      {
+         name=entitySchema.getName();
+
+         // Synth.generate("entity", entity, objectGraph, name);
+         // classes[name]=classContext[name];
+         // objectGraph[name]=Synth.generate("entity", entities[i]);
+         objectGraph[name]=EntityFactory(entitySchema);
+      }
+
+      this.schema=schema;
+   };
 
    /**
     * Creates a new ObjectGraph
     */
-   function ObjectGraph(options)
+   function ObjectGraph(objectGraphSchema, options)
    {
-      options || (options={});
+      // sanitize the object graph schema
+      objectGraphSchema=(objectGraphSchema.getName || (objectGraphSchema=new ObjectGraphSchema(objectGraphSchema)));
 
-      // default to merge
+      // configure default options
+      options || (options={});
       options.mode || (options.mode="patch");
 
       this.options=options;
+
+      // init empty store and patch
       this.store={};
       this.patch=(options.mode==="merge" ? {} : []);
 
+      // init empty store index
       this.indexed={};
+
+      // build the object graph from the schema
+      this.schema=objectGraphSchema;
+
+      buildObjectGraphFromSchema(this, objectGraphSchema);
    }
+
+   /**
+    * Returns the schema of the object graph.
+    * @return {Schema} The schema of the object graph
+    */
+   ObjectGraph.prototype.getSchema = function () {
+      return this.schema;
+   };
 
    /**
     * Sets the parent of the receiver who will receive notifications.
@@ -133,7 +225,7 @@ require("./descriptor-handlers/index.js");
          {
             console.log("external");
 
-            applyVersionedMergePatch(self, patch, options);
+            self.options.mode==="merge" ? applyVersionedMergePatch(self, patch, options) : applyVersionedPatch(self, patch, options);
          }
 
          resolve();
@@ -156,7 +248,7 @@ require("./descriptor-handlers/index.js");
    ObjectGraph.prototype.register = function (obj) {
 
       var entityName=obj.getSchema().getName();
-      ensure(this.store, entityName, "array").push(obj);
+      ensure(this.store, entityName, "object")[obj.ID]=obj;
       ensure(ensure(this.indexed, entityName, "object"), "ID", "object")[obj.ID]=obj;
    };
 
@@ -169,6 +261,15 @@ require("./descriptor-handlers/index.js");
 
       var entityName=obj.getSchema().getName();
       var collection=this.store[entityName];
+
+      var ID=obj.ID;
+
+      delete collection[ID];
+      delete this.indexed[entityName].ID[ID];
+
+      return;
+
+
       var indexOf=collection.indexOf(obj); // TODO: this needs work because we should be looking by ID, not just object equality
 
       if(indexOf!==-1)
@@ -191,7 +292,7 @@ require("./descriptor-handlers/index.js");
          descriptor=Descriptor.compile(descriptor, "object-graph");
       }
 
-      return descriptor(this.store);
+      return descriptor(this.store, {resultType:"array"});
    };
 
    /**

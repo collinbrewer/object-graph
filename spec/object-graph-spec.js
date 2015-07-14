@@ -1,5 +1,3 @@
-global.Promise=require("promiz");
-
 var chai=require("chai");
 var chaiAsPromised=require("chai-as-promised");
 var should=chai.should();
@@ -69,7 +67,7 @@ describe("Constructor", function(){
 
    it("should create a new object graph", function(){
 
-      var objectGraph=new ObjectGraph();
+      var objectGraph=new ObjectGraph(definition);
 
       should.exist(objectGraph);
    });
@@ -102,24 +100,20 @@ describe("Querying Objects", function(){
    //    {"op":"add", "path":"/Todo/4567", "value":{"id":4567, "title":"thirty"}}
    // ];
 
-   var Graph={};
-
-   Synth.generate("object-graph", definition, Graph);
-
    beforeEach(function(){
-      objectGraph=new ObjectGraph();
+      objectGraph=new ObjectGraph(definition);
 
       var todo;
-      todo=new Graph.Todo(objectGraph);
+      todo=new objectGraph.Todo(objectGraph);
       todo.setTitle("two");
 
-      todo=new Graph.Todo(objectGraph);
+      todo=new objectGraph.Todo(objectGraph);
       todo.setTitle("one");
 
-      todo=new Graph.Todo(objectGraph);
+      todo=new objectGraph.Todo(objectGraph);
       todo.setTitle("three");
 
-      todo=new Graph.Todo(objectGraph);
+      todo=new objectGraph.Todo(objectGraph);
       todo.setTitle("thirty");
    });
 
@@ -183,14 +177,9 @@ describe("Relationships", function(){
 
    it("should resolve a one to one relationship", function(){
 
-      // synthesize an object graph from the schema
-      var Graph={};
-
-      Synth.generate("object-graph", definition, Graph);
-
-      var objectGraph=new ObjectGraph();
-      var person=new Graph.Person(objectGraph);
-      var company=new Graph.Company(objectGraph);
+      var objectGraph=new ObjectGraph(definition);
+      var person=new objectGraph.Person(objectGraph);
+      var company=new objectGraph.Company(objectGraph);
 
       person.setEmployer(company);
 
@@ -212,15 +201,10 @@ describe("Fetched Properties", function(){
 
    it("should return an external fetched property", function(done){
 
-      // synthesize an object graph from the schema
-      var Graph={};
+      var objectGraph=new ObjectGraph(definition);
 
-      Synth.generate("object-graph", definition, Graph);
-
-      var objectGraph=new ObjectGraph();
-
-      var person=new Graph.Person(objectGraph);
-      var company=new Graph.Company(objectGraph);
+      var person=new objectGraph.Person(objectGraph);
+      var company=new objectGraph.Company(objectGraph);
 
       company.setName("Biz");
 
@@ -242,12 +226,7 @@ describe("Fetched Properties", function(){
 
 describe("Invalidations", function(){
 
-   // synthesize an object graph from the schema
-   var Spec={};
-
-   Synth.generate("object-graph", definition, Spec);
-
-   var objectGraph=new ObjectGraph();
+   var objectGraph=new ObjectGraph(definition);
 
    it("should invalidate an internal fetched property");
 
@@ -260,21 +239,17 @@ describe("Patching", function(){
 
    context("#requestPatch", function(){
 
-      var Spec={};
-
-      Synth.generate("object-graph", definition, Spec);
-
       var objectGraph;
       var person;
 
       beforeEach(function(){
 
-         objectGraph=new ObjectGraph();
+         objectGraph=new ObjectGraph(definition);
       });
 
       it("should generate and return a patch", function(){
 
-         new Spec.Person(objectGraph);
+         new objectGraph.Person(objectGraph);
 
          return objectGraph.requestPatch().should.eventually.be.an("array");
       });
@@ -283,18 +258,14 @@ describe("Patching", function(){
 
 describe("Staging", function(){
 
-   var Spec={};
-
-   Synth.generate("object-graph", definition, Spec);
-
    var objectGraph;
    var person;
 
    beforeEach(function(){
 
-      objectGraph=new ObjectGraph();
+      objectGraph=new ObjectGraph(definition);
 
-      person=new Spec.Person(objectGraph);
+      person=new objectGraph.Person(objectGraph);
       person.setFirstName("Chris");
    });
 
@@ -336,7 +307,7 @@ describe("Staging", function(){
 
 describe("Branching", function(){
 
-   var objectGraph=new ObjectGraph();
+   var objectGraph=new ObjectGraph(definition);
    var branch;
 
    it("should create a branch");
