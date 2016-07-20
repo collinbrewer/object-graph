@@ -13,4 +13,4 @@ Schema.register("entity", EntitySchema);
 Schema.register("object-graph", ObjectGraphSchema);
 
 // export
-(typeof(module)!=="undefined" ? (module.exports=ObjectGraphSchema) : ((typeof(define)!=="undefined" && define.amd) ? define(function(){ return ObjectGraphSchema; }) : (window.ObjectGraphSchema=ObjectGraphSchema)));
+module.exports=ObjectGraphSchema;

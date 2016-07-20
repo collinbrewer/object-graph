@@ -2,12 +2,10 @@
  *
  */
 Descriptor.register("object-graph", "entityName", function(objectGraph, entityName){
-
    return objectGraph[entityName];
 });
 
 Descriptor.register("comparator", "predicate", function(node, predicate){
-
    return Predicate.parse(predicate).evaluateWithObject(node);
 });
 

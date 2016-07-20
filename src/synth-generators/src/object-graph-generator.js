@@ -1,3 +1,5 @@
+var Synth=require("synth");
+
 var ObjectGraph=require("../../object-graph.js");
 
 /**
@@ -8,7 +10,12 @@ var ObjectGraph=require("../../object-graph.js");
  */
 (function(){
 
-   var objectGraph=new ObjectGraph(graphSchema);
+   function ObjectGraphGenerator(graphSchema){
 
-   return objectGraph;
+      var objectGraph=new ObjectGraph(graphSchema);
+      
+      return objectGraph;
+   }
+
+   module.exports=ObjectGraphGenerator;
 })();

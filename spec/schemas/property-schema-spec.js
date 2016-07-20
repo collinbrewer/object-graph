@@ -1,5 +1,4 @@
 var should=require("chai").should();
-
 var PropertySchema=require("../../src/schema-definitions/src/property-schema.js");
 
 describe("Constructor", function(){
@@ -47,6 +46,13 @@ describe("Querying", function(){
 
       var schema=new PropertySchema(definition);
       schema.getEntityName().should.equal("Person");
+   });
+
+   it("should return the delete rule for a property", function(){
+      var definition={"name" : "friend", "type":"relationship", "entityName":"Person", "deleteRule":"cascade"};
+
+      var schema=new PropertySchema(definition);
+      schema.getDeleteRule().should.equal("cascade");
    });
 
    it("should return the ivar name", function(){

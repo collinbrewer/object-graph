@@ -5,20 +5,6 @@
 
 (function(){
 
-   var TypeValidators={
-      "string"  : function(value){ return typeof(value)==='string'; },
-      "number"  : function(value){ return typeof(value)==='number' && !isNaN(value); },
-      "boolean" : function(value){ return typeof(value)==='boolean'; },
-      "date"    : function(value){ return typeof(value)==='object' && !!value && value.constructor.name==='Date'; }
-   };
-
-   var Typecasters={
-      "string"  : function(value){ return ''+value; },
-      "number"  : function(value){ return +value; },
-      "boolean" : function(value){ return !!value; },
-      "date"    : function(value){ return Date.parse(value); }
-   };
-
    // TODO: we should rely on our custom expression for getting this value
    var getFirstDependentKeyFromKeyPath=function(keyPath){
 
@@ -137,6 +123,14 @@
    PropertySchema.prototype.isToMany = function () {
       var definition=this.definition;
       return (("toMany" in definition) ? definition.toMany : false);
+   };
+
+   /**
+    * Returns the delete rule for a relationship property.
+    * @return {string} The delete rule for the property
+    */
+   PropertySchema.prototype.getDeleteRule = function () {
+      return this.definition.deleteRule || null;
    };
 
    /**

@@ -1,3 +1,8 @@
+var should=require("chai").should();
+
+var EntitySchema=require("../../src/schema-definitions/src/entity-schema.js");
+var EntityGenerator=require("../../src/synth-generators/src/entity-generator.js");
+
 describe("Synthesize Class", function(){
 
    var definition={
@@ -17,7 +22,7 @@ describe("Synthesize Class", function(){
    context("from entity schema", function(){
 
       beforeEach(function(){
-         Company=Synth.generate("class", definition);
+         Company=new EntityGenerator(new EntitySchema(definition));
       })
 
       it("generates a class", function(){

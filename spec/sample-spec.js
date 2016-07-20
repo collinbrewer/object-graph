@@ -92,8 +92,8 @@ context("Sample", function(){
             objectGraph.read({entityName:"Company"}).should.have.length(2);
             objectGraph.read({entityName:"Person"}).should.have.length(2);
             objectGraph.read({entityName:"Person", predicate:"firstName=='John'"}).should.have.length(1);
-            
-            // objectGraph.query().any("Person").whose("firstName")
+
+            // objectGraph.queryAny("Person").whose("firstName").isEqualTo("John")
 
             var john=objectGraph.read({entityName:"Person", predicate:"firstName=='John'"})[0];
 

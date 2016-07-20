@@ -4,10 +4,101 @@
 
 var Synth=require("synth");
 
-(function(){
+/*
+ * Search get tries to get the value of key on the given object by checking for
+ * sensible getter names, loosely based on Apple's KVC method `getValueForKey`
+ *  Apple search pattern:
+ *    getKey()
+ *    key()
+ *    isKey()
+ *    countOfKey()
+ *    objectInKey()
+ *    keyAtIndexes()
+ * Falls back to ivarGet
+ */
+function searchGet(key, obj)
+{
+   obj || (obj=this);
 
-   var set=function set(key, value){ this[key]=value; };
-   var get=function get(key){ return this[key]; };
+   var value;
+   var Key=key.charAt(0).toUpperCase() + key.substring(1);
+   var accessor;
+
+   if((accessor=("get" + Key)) in obj)
+   {
+      var fn=obj[accessor];
+
+      value=fn.call(obj);
+   }
+   // else if(("is" + Key) in obj)
+   // {
+   //    value=obj.isKey();
+   // }
+   // else if(("_" + key) in obj)
+   // {
+   //    value=obj["_" + key];
+   // }
+   // else if(("_is" + Key) in obj)
+   // {
+   //    value=obj["_is" + key];
+   // }
+   // else// if((key in obj))
+   // {
+   //    value=obj[key];
+   // }
+   else {
+      value=ivarGet(key, obj);
+   }
+
+   return value;
+}
+
+/*
+ * Search set tries to set the value of key on the given object by checking for
+ * sensible setter names, loosely based on Apple's KVC method `setValue:forKey:`
+ *  Apple search pattern:
+ *    setKey(val)
+ *    key(val)
+ * Falls back to the method ivarSet
+ */
+function searchSet(key, value, obj)
+{
+   obj || (obj=this);
+
+   var Key=key.charAt(0).toUpperCase() + key.substring(1);
+   var accessor;
+
+   if((accessor=("set" + Key)) in obj)
+   {
+      var fn=obj[accessor];
+
+      fn.call(obj, value);
+   }
+   // else if(("is" + Key) in obj)
+   // {
+   //    value=obj.isKey();
+   // }
+   // else if(("_" + key) in obj)
+   // {
+   //    value=obj["_" + key];
+   // }
+   // else if(("_is" + Key) in obj)
+   // {
+   //    value=obj["_is" + key];
+   // }
+   // else// if((key in obj))
+   // {
+   //    value=obj[key];
+   // }
+   else {
+      value=ivarSet(key, value, obj);
+   }
+}
+
+var ivarSet=function set(key, value){ this[key]=value; };
+var ivarGet=function get(key){ return this[key]; };
+
+(function(){
 
    var TypeValidators={
       "string"  : function(value){ return typeof(value)==='string'; },
@@ -23,12 +114,12 @@ var Synth=require("synth");
       "date"    : function(value){ return Date.parse(value); }
    };
 
-   Synth.register("unnamed-getter", function(propertySchema){
-      return get;
+   Synth.register("dynamic-unnamed-getter", function(propertySchema){
+      return searchGet;
    });
 
-   Synth.register("unnamed-setter", function(propertySchema){
-      return set;
+   Synth.register("dynamic-unnamed-setter", function(propertySchema){
+      return searchSet;
    });
 
    Synth.register("attribute-getter", function(propertySchema){
@@ -51,7 +142,6 @@ var Synth=require("synth");
    //    - type: the type of data to be stored in the ivar, used in the CAST method to ensure that a properties value is the correct type
    //    - defaultValue
    Synth.register("getter", function(propertySchema){
-
       return Synth.generate(propertySchema.getType() + "-getter", propertySchema);
    });
 
@@ -60,6 +150,8 @@ var Synth=require("synth");
    });
 
    Synth.register("attribute-setter", function(propertySchema){
+
+      // console.log(propertySchema, propertySchema.getIvar());
 
       var ivar=propertySchema.getIvar();
       var name=propertySchema.getName();
@@ -146,45 +238,6 @@ var Synth=require("synth");
       return descriptor;
    }
 
-   function dynamicGet(key, obj)
-   {
-      var value;
-      var Key=key.charAt(0).toUpperCase() + key.substring(1);
-      var accessor;
-
-      // Apple search pattern:
-      //    getKey()
-      //    key()
-      //    isKey()
-      //    countOfKey()
-      //    objectInKey()
-      //    keyAtIndexes()
-      if((accessor=("get" + Key)) in obj)
-      {
-         var fn=obj[accessor];
-
-         value=fn.call(obj);
-      }
-      // else if(("is" + Key) in obj)
-      // {
-      //    value=obj.isKey();
-      // }
-      // else if(("_" + key) in obj)
-      // {
-      //    value=obj["_" + key];
-      // }
-      // else if(("_is" + Key) in obj)
-      // {
-      //    value=obj["_is" + key];
-      // }
-      // else// if((key in obj))
-      // {
-      //    value=obj[key];
-      // }
-
-      return value;
-   }
-
    Synth.register("fetcher", function(property, context){
 
       var fetch=function(){
@@ -249,7 +302,7 @@ var Synth=require("synth");
 
       var source="";
       // source+="function(value){\n";
-      // source+="   console.log('we made it!');\n";
+      // source+="   console.log('we made it!', this.objectGraph);\n";
       source+="   var primitive=(value instanceof this.objectGraph." + propertySchema.getEntityName() + " ? value.ID : value);\n";
       // source+="   console.log('primitive: ', primitive);\n";
       source+="   this." + ivar + "=primitive;"
@@ -266,7 +319,6 @@ var Synth=require("synth");
 
 
    Synth.register("setter", function(propertySchema){
-
       return Synth.generate(propertySchema.getType() + "-setter", propertySchema);
    });
 
@@ -293,6 +345,7 @@ var Synth=require("synth");
          if(propertySchema.getType()!=="fetched" && !(setter in context))
          {
             Synth.generate("setter", propertySchema, context, setter);
+            Synth.generate("dynamic-unnamed-setter", propertySchema, context, "set");
          }
       }
 
@@ -302,6 +355,7 @@ var Synth=require("synth");
       if(!(getter in context))
       {
          Synth.generate("getter", propertySchema, context, getter);
+         Synth.generate("dynamic-unnamed-getter", propertySchema, context, "get");
       }
 
       // generate a checker if it doesn't already exist
@@ -324,6 +378,11 @@ var Synth=require("synth");
    }
 
    Synth.register("property", PropertyFactory);
+
+   PropertyFactory.TypeValidators=TypeValidators;
+   PropertyFactory.get=searchGet;
+   PropertyFactory.set=searchSet;
+
 
    module.exports=PropertyFactory;
 })();

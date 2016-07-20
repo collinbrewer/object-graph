@@ -162,7 +162,7 @@ var ObjectGraphSchema=require("./schema-definitions/index.js");
    function ObjectGraph(objectGraphSchema, options)
    {
       // sanitize the object graph schema
-      objectGraphSchema=(objectGraphSchema.getName || (objectGraphSchema=new ObjectGraphSchema(objectGraphSchema)));
+      objectGraphSchema.getName || (objectGraphSchema=new ObjectGraphSchema(objectGraphSchema));
 
       // configure default options
       options || (options={});
@@ -376,10 +376,6 @@ var ObjectGraphSchema=require("./schema-definitions/index.js");
    };
 
    // expose
-   (function(mod, name){
-      (typeof(module)!=="undefined" ? (module.exports=mod) : ((typeof(define)!=="undefined" && define.amd) ? define(function(){ return mod; }) : (window[name]=mod)));
-   })(ObjectGraph, "ObjectGraph");
-
-   return ObjectGraph;
+   module.exports=ObjectGraph;
 
 })();

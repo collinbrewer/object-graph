@@ -1,3 +1,8 @@
+var should=require("chai").should();
+
+var ObjectGraphSchema=require("../../src/schema-definitions/src/object-graph-schema.js");
+var ObjectGraphGenerator=require("../../src/synth-generators/src/object-graph-generator.js");
+
 describe("Synthesize Graph", function(){
 
    var definition={
@@ -41,7 +46,7 @@ describe("Synthesize Graph", function(){
                   schemaType : "property",
                   name: "employer",
                   type: "relationship",
-                  entityName: "business"
+                  entityName: "Company"
                },
 
                {
@@ -57,39 +62,39 @@ describe("Synthesize Graph", function(){
 
    context("from object graph schema", function(){
 
-      var App;
+      var objectGraph;
 
       beforeEach(function(){
-         App={};
-         Synth.generate("object-graph", definition, App);
+         objectGraph=new ObjectGraphGenerator(new ObjectGraphSchema(definition));
       });
 
       it("generates a graph", function(){
-         App.should.not.equal({});
+         objectGraph.should.be.an("object");
       });
 
       it("generates entity classes", function(){
-         App.should.have.property("Person");
-         App.should.have.property("Company");
+         objectGraph.should.have.property("Person");
+         objectGraph.should.have.property("Company");
       });
 
       it("resolves fetched properties", function(){
-         var company=new App.Company();
+         var company=new objectGraph.Company(objectGraph);
          company.setName("Biz");
 
-         var person=new App.Person();
-
+         var person=new objectGraph.Person(objectGraph);
          person.setEmployer(company);
 
-         should(person.getEmployerName()).equal("Biz");
-      });
+         console.log(person);
 
-      it("understands dependencies", function(){
-         var company=new App.Company();
-         var person=new App.Person();
-
-         person.setEmployer(company);
+         person.getEmployerName().should.equal("Biz");
       });
+      //
+      // it("understands dependencies", function(){
+      //    var company=new App.Company();
+      //    var person=new App.Person();
+      //
+      //    person.setEmployer(company);
+      // });
 
    });
 });
